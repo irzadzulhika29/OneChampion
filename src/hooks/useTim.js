@@ -98,11 +98,31 @@ export function useDeleteTim() {
 
 /**
  * Add anggota to a tim.
+ * Accepts either a partial anggota object (with tim_id) OR
+ *   { tim_id, anggota_id_to_link } to COPY an existing anggota row into this tim.
  */
 export function useAddAnggota() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (values) => {
+      // If "link existing" mode: read source row then insert a copy into the target tim.
+      if (values.anggota_id_to_link && !values.nama) {
+        const { data: src, error: srcErr } = await supabase
+          .from('anggota_tim')
+          .select('*')
+          .eq('id', values.anggota_id_to_link)
+          .single()
+        if (srcErr) throw srcErr
+        const { id, created_at, tim_id, ...copy } = src
+        const { data, error } = await supabase
+          .from('anggota_tim')
+          .insert({ ...copy, tim_id: values.tim_id })
+          .select()
+          .single()
+        if (error) throw error
+        return data
+      }
+      // Normal insert
       const { data, error } = await supabase
         .from('anggota_tim')
         .insert(values)
@@ -114,6 +134,7 @@ export function useAddAnggota() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['tim', data.tim_id] })
       qc.invalidateQueries({ queryKey: ['tim'] })
+      qc.invalidateQueries({ queryKey: ['all-anggota'] })
     },
   })
 }

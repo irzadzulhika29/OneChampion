@@ -48,7 +48,12 @@ export default function Login() {
     const { error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
-      options: { data: { full_name: values.full_name } },
+      options: {
+        data: { full_name: values.full_name },
+        // Use the current origin so email confirmation link matches where the user is
+        // (works for localhost dev AND Vercel production automatically)
+        emailRedirectTo: `${window.location.origin}/`,
+      },
     })
     setLoading(false)
     if (error) {
@@ -63,7 +68,9 @@ export default function Login() {
     setGoogleLoading(true)
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
     })
     setGoogleLoading(false)
     if (error) {

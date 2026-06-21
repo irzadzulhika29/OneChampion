@@ -24,7 +24,13 @@ export function useLombaList(filters = {}) {
       }
       const { data, error } = await q
       if (error) throw error
-      return data ?? []
+      // Normalize nested 1-to-1 embeds: PostgREST may return object instead of array
+      const rows = data ?? []
+      return rows.map((row) => {
+        if (row.hasil && !Array.isArray(row.hasil)) row.hasil = [row.hasil]
+        if (row.tim && !Array.isArray(row.tim)) row.tim = [row.tim]
+        return row
+      })
     },
   })
 }
@@ -43,6 +49,14 @@ export function useLombaDetail(id) {
         .eq('id', id)
         .single()
       if (error) throw error
+      // Normalize embedded relations: PostgREST sometimes returns
+      // single related row as object (1-to-1) instead of array.
+      // Coerce to array so consumer code is consistent.
+      if (data) {
+        if (data.hasil && !Array.isArray(data.hasil)) data.hasil = [data.hasil]
+        if (data.lampiran && !Array.isArray(data.lampiran)) data.lampiran = [data.lampiran]
+        if (data.tim && !Array.isArray(data.tim)) data.tim = [data.tim]
+      }
       return data
     },
   })

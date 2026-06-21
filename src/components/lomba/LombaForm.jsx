@@ -21,7 +21,7 @@ const SectionLabel = ({ children }) => (
   </div>
 )
 
-export default function LombaForm({ initial, onSuccess, onCancel }) {
+export default function LombaForm({ initial, onSuccess, onCancel, hideButtons = false, formId }) {
   const { toast } = useToast()
   const { data: timList } = useTim()
   const createLomba = useCreateLomba()
@@ -109,7 +109,7 @@ export default function LombaForm({ initial, onSuccess, onCancel }) {
   const isLoading = createLomba.isPending || updateLomba.isPending
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5">
+    <form id={formId} onSubmit={onSubmit} className="space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* === INFORMASI UTAMA === */}
         <SectionLabel>Informasi Utama</SectionLabel>
@@ -286,15 +286,17 @@ export default function LombaForm({ initial, onSuccess, onCancel }) {
         </div>
       </div>
 
-      <div className="flex justify-end gap-2 pt-2">
-        {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>Batal</Button>
-        )}
-        <Button type="submit" disabled={isLoading}>
-          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-          {isEdit ? 'Simpan Perubahan' : 'Buat Lomba'}
-        </Button>
-      </div>
+      {!hideButtons && (
+        <div className="flex justify-end gap-2 pt-2">
+          {onCancel && (
+            <Button type="button" variant="outline" onClick={onCancel}>Batal</Button>
+          )}
+          <Button type="submit" disabled={isLoading}>
+            {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isEdit ? 'Simpan Perubahan' : 'Buat Lomba'}
+          </Button>
+        </div>
+      )}
     </form>
   )
 }

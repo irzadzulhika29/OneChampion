@@ -7,10 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
+import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import TimForm from '@/components/tim/TimForm'
 import AllAnggotaTable from '@/components/tim/AllAnggotaTable'
-import { Plus, Users, MoreVertical, Trash2, Edit, ArrowRight, ListChecks } from 'lucide-react'
+import AnggotaForm from '@/components/tim/AnggotaForm'
+import { Plus, Users, MoreVertical, Trash2, Edit, ArrowRight, ListChecks, UserPlus } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { formatDate } from '@/lib/utils'
 
@@ -19,10 +21,11 @@ export default function TimPage() {
   const { data: allAnggota, isLoading: loadingAnggota } = useAllAnggota()
   const deleteTim = useDeleteTim()
   const { toast } = useToast()
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const [timDialogOpen, setTimDialogOpen] = useState(false)
+  const [anggotaDialogOpen, setAnggotaDialogOpen] = useState(false)
 
   const handleDelete = async (id, nama) => {
-    if (!confirm(`Hapus tim "${nama}"? Semua anggota dan lomba terkait akan terpengaruh.`)) return
+    if (!confirm(`Hapus tim "${nama}"? Semua lomba terkait akan kehilangan tim.`)) return
     try {
       await deleteTim.mutateAsync(id)
       toast({ title: 'Tim dihapus' })
@@ -33,26 +36,56 @@ export default function TimPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Tim</h1>
           <p className="text-muted-foreground text-sm mt-1">Kelola tim dan anggota untuk lomba kelompok</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Buat Tim</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Buat Tim Baru</DialogTitle>
-              <DialogDescription>Tambahkan anggota setelah tim dibuat.</DialogDescription>
-            </DialogHeader>
-            <TimForm onSuccess={() => setDialogOpen(false)} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Tambah Anggota — creates an anggota row that's available to be picked into tim */}
+          <Dialog open={anggotaDialogOpen} onOpenChange={setAnggotaDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <UserPlus className="h-4 w-4" />
+                <span className="hidden sm:inline">Tambah Anggota</span>
+                <span className="sm:hidden">Anggota</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Tambah Anggota Baru</DialogTitle>
+                <DialogDescription>
+                  Tambahkan anggota ke bank data. Nanti bisa di-select saat membuat/mengedit tim.
+                </DialogDescription>
+              </DialogHeader>
+              <AnggotaQuickForm onSuccess={() => setAnggotaDialogOpen(false)} />
+            </DialogContent>
+          </Dialog>
+
+          {/* Tambah Tim */}
+          <Dialog open={timDialogOpen} onOpenChange={setTimDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Tambah Tim</span>
+                <span className="sm:hidden">Tim</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Buat Tim Baru</DialogTitle>
+                <DialogDescription>
+                  Pilih anggota yang sudah ada dari bank data.
+                </DialogDescription>
+              </DialogHeader>
+              <TimForm
+                mode="select"
+                availableAnggota={allAnggota || []}
+                onSuccess={() => setTimDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Section 1: Daftar Tim (cards) */}
@@ -78,10 +111,21 @@ export default function TimPage() {
                 <Users className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="font-semibold mb-1">Belum ada tim</h3>
-              <p className="text-sm text-muted-foreground mb-4">Buat tim pertama untuk mulai mengelola anggota.</p>
-              <Button onClick={() => setDialogOpen(true)}>
-                <Plus className="h-4 w-4" /> Buat Tim
-              </Button>
+              <p className="text-sm text-muted-foreground mb-4">
+                {allAnggota && allAnggota.length > 0
+                  ? `Ada ${allAnggota.length} anggota di bank data. Buat tim dan pilih dari daftar.`
+                  : 'Tambahkan anggota dulu, baru buat tim.'}
+              </p>
+              <div className="flex gap-2 flex-wrap justify-center">
+                {(!allAnggota || allAnggota.length === 0) && (
+                  <Button variant="outline" onClick={() => setAnggotaDialogOpen(true)}>
+                    <UserPlus className="h-4 w-4" /> Tambah Anggota
+                  </Button>
+                )}
+                <Button onClick={() => setTimDialogOpen(true)}>
+                  <Plus className="h-4 w-4" /> Tambah Tim
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (
@@ -156,4 +200,12 @@ export default function TimPage() {
       )}
     </div>
   )
+}
+
+/**
+ * Quick form for adding a single anggota to the bank data (no tim assignment).
+ * On the Tim page, this is a lightweight path: just create the row, no tim linkage.
+ */
+function AnggotaQuickForm({ onSuccess }) {
+  return <AnggotaForm onSuccess={onSuccess} />
 }

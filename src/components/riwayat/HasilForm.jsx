@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { hasilSchema } from '@/lib/validations'
@@ -18,22 +19,35 @@ export default function HasilForm({ lombaId, initial, onSuccess }) {
     defaultValues: initial || { peringkat: '', predikat: '', poin: 0, catatan: '' },
   })
 
+  // Reset form when initial prop changes (e.g., after refetch)
+  useEffect(() => {
+    if (initial) {
+      form.reset(initial)
+    }
+  }, [initial?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const onSubmit = form.handleSubmit(async (values) => {
     try {
+      // Clean empty numeric
+      const cleaned = {
+        ...values,
+        poin: values.poin == null || values.poin === '' ? null : Number(values.poin),
+      }
       if (initial) {
         const { error } = await supabase
           .from('hasil')
-          .update(values)
+          .update(cleaned)
           .eq('id', initial.id)
         if (error) throw error
         toast({ title: 'Hasil diperbarui' })
       } else {
         const { error } = await supabase
           .from('hasil')
-          .insert({ ...values, lomba_id: lombaId })
+          .insert({ ...cleaned, lomba_id: lombaId })
         if (error) throw error
         toast({ title: 'Hasil dicatat' })
       }
+      // Invalidate detail + list caches so refetch picks up new state
       qc.invalidateQueries({ queryKey: ['lomba', lombaId] })
       qc.invalidateQueries({ queryKey: ['lomba'] })
       onSuccess?.()

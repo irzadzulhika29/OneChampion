@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useLombaDetail, useDeleteLomba } from '@/hooks/useLomba'
 import { Button } from '@/components/ui/button'
@@ -6,7 +7,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
+import { useQueryClient } from '@tanstack/react-query'
 import LombaForm from '@/components/lomba/LombaForm'
+import LombaPreview from '@/components/lomba/LombaPreview'
 import { TimelinePosterView } from '@/components/lomba/TimelinePoster'
 import HasilForm from '@/components/riwayat/HasilForm'
 import LampiranList from '@/components/riwayat/LampiranList'
@@ -14,6 +17,8 @@ import {
   ArrowLeft,
   Trash2,
   Save,
+  Pencil,
+  X,
   Calendar,
   Trophy,
 } from 'lucide-react'
@@ -23,8 +28,10 @@ export default function LombaDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const qc = useQueryClient()
   const { data: lomba, isLoading } = useLombaDetail(id)
   const deleteLomba = useDeleteLomba()
+  const [editing, setEditing] = useState(false)
 
   const handleDelete = async () => {
     if (!confirm(`Hapus lomba "${lomba.judul}"?`)) return
@@ -35,6 +42,13 @@ export default function LombaDetailPage() {
     } catch (err) {
       toast({ variant: 'destructive', title: 'Gagal', description: err.message })
     }
+  }
+
+  const handleSaveSuccess = () => {
+    setEditing(false)
+    qc.invalidateQueries({ queryKey: ['lomba', id] })
+    qc.invalidateQueries({ queryKey: ['lomba'] })
+    toast({ title: 'Perubahan disimpan' })
   }
 
   if (isLoading) {
@@ -84,24 +98,68 @@ export default function LombaDetailPage() {
             <p className="text-sm text-muted-foreground mt-1">{lomba.penyelenggara}</p>
           )}
         </div>
-        <Button variant="destructive" size="sm" onClick={handleDelete}>
-          <Trash2 className="h-4 w-4" />
-          <span className="hidden sm:inline">Hapus</span>
-        </Button>
+
+        <div className="flex items-center gap-2">
+          {editing ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setEditing(false)}
+              >
+                <X className="h-4 w-4" />
+                <span className="hidden sm:inline">Batal</span>
+              </Button>
+              <Button
+                type="submit"
+                form="lomba-edit-form"
+                size="sm"
+              >
+                <Save className="h-4 w-4" />
+                <span>Simpan Perubahan</span>
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setEditing(true)}
+            >
+              <Pencil className="h-4 w-4" />
+              <span>Edit</span>
+            </Button>
+          )}
+          <Button variant="destructive" size="sm" onClick={handleDelete}>
+            <Trash2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Hapus</span>
+          </Button>
+        </div>
       </div>
 
-      {/* Inline editable form */}
+      {/* Detail Lomba Card — Preview or Edit */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Save className="h-4 w-4" /> Detail Lomba
-          </CardTitle>
+          <CardTitle className="text-lg">Detail Lomba</CardTitle>
           <CardDescription>
-            Edit langsung di sini. Klik "Simpan Perubahan" di bawah untuk menyimpan.
+            {editing
+              ? 'Mode edit — ubah field lalu klik Simpan Perubahan di atas.'
+              : 'Mode preview — klik Edit untuk mengubah data.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <LombaForm initial={lomba} onSuccess={() => window.location.reload()} />
+          {editing ? (
+            <div id="lomba-edit-form-wrapper">
+              <LombaForm
+                initial={lomba}
+                onSuccess={handleSaveSuccess}
+                hideButtons
+                formId="lomba-edit-form"
+              />
+            </div>
+          ) : (
+            <LombaPreview lomba={lomba} />
+          )}
         </CardContent>
       </Card>
 
