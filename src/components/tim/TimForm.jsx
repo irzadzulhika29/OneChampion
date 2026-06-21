@@ -53,12 +53,12 @@ export default function TimForm({
         onSuccess?.()
       } else {
         const created = await createTim.mutateAsync(values)
-        // If mode='select' and user picked members, link them now
+        // If mode='select' and user picked members, link them now (insert anggota_tim rows)
         if (mode === 'select' && selectedIds.size > 0) {
           const timId = created.id
           await Promise.all(
-            Array.from(selectedIds).map((anggotaId) =>
-              addAnggota.mutateAsync({ tim_id: timId, anggota_id_to_link: anggotaId })
+            Array.from(selectedIds).map((profileId) =>
+              addAnggota.mutateAsync({ tim_id: timId, profile_id: profileId })
             )
           )
           toast({ title: 'Tim dibuat', description: `${selectedIds.size} anggota ditambahkan ke tim.` })
@@ -87,10 +87,9 @@ export default function TimForm({
       if (!search.trim()) return true
       const q = search.toLowerCase()
       return (
-        a.nama?.toLowerCase().includes(q) ||
+        a.full_name?.toLowerCase().includes(q) ||
         a.nim?.toLowerCase().includes(q) ||
-        a.prodi?.toLowerCase().includes(q) ||
-        a.email?.toLowerCase().includes(q)
+        a.prodi?.toLowerCase().includes(q)
       )
     })
   }, [availableAnggota, allAnggotaList, search, isEdit, initial, mode])
@@ -209,7 +208,7 @@ export default function TimForm({
               try {
                 await Promise.all(
                   Array.from(selectedIds).map((id) =>
-                    addAnggota.mutateAsync({ tim_id: initial.id, anggota_id_to_link: id })
+                    addAnggota.mutateAsync({ tim_id: initial.id, profile_id: id })
                   )
                 )
                 toast({ title: `${selectedIds.size} anggota ditambahkan` })

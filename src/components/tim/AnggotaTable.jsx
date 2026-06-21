@@ -6,7 +6,6 @@ import {
   getFilteredRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { useQueryClient } from '@tanstack/react-query'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,18 +33,25 @@ import {
 } from 'lucide-react'
 import AnggotaForm from './AnggotaForm'
 
+/**
+ * Table of anggota for a single tim. Each row is an anggota_tim record with
+ * the embedded `profile` (nama, email, nim, prodi, no_hp from profiles+auth).
+ */
 export default function AnggotaTable({ timId, anggota = [], loading }) {
   const { toast } = useToast()
-  const qc = useQueryClient()
   const deleteAnggota = useDeleteAnggota()
   const [sorting, setSorting] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
 
+  // Normalize to array (in case 1-to-1 embed returns object)
+  const rows = Array.isArray(anggota) ? anggota : (anggota ? [anggota] : [])
+
   const handleDelete = async (a) => {
-    if (!confirm(`Hapus anggota "${a.nama}"?`)) return
+    const name = a.profile?.full_name || 'anggota ini'
+    if (!confirm(`Hapus anggota "${name}" dari tim?`)) return
     try {
       await deleteAnggota.mutateAsync({ id: a.id, tim_id: timId })
-      toast({ title: 'Anggota dihapus' })
+      toast({ title: 'Anggota dihapus dari tim' })
     } catch (err) {
       toast({ variant: 'destructive', title: 'Gagal', description: err.message })
     }
@@ -73,7 +79,8 @@ export default function AnggotaTable({ timId, anggota = [], loading }) {
         enableSorting: false,
       },
       {
-        accessorKey: 'nama',
+        id: 'nama',
+        accessorFn: (row) => row.profile?.full_name,
         header: ({ column }) => (
           <Button variant="ghost" size="sm" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')} className="-ml-3">
             Nama <ArrowUpDown className="ml-1 h-3 w-3" />
@@ -81,46 +88,49 @@ export default function AnggotaTable({ timId, anggota = [], loading }) {
         ),
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <span className="font-medium truncate max-w-[180px]">{row.original.nama}</span>
+            <span className="font-medium truncate max-w-[180px]">{row.original.profile?.full_name || '—'}</span>
             {row.original.peran === 'ketua' && <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
           </div>
         ),
       },
       {
-        accessorKey: 'nim',
+        id: 'nim',
+        accessorFn: (row) => row.profile?.nim,
         header: 'NIM',
-        cell: ({ row }) => <span className="text-sm font-mono">{row.original.nim || '—'}</span>,
+        cell: ({ row }) => <span className="text-sm font-mono">{row.original.profile?.nim || '—'}</span>,
       },
       {
-        accessorKey: 'prodi',
+        id: 'prodi',
+        accessorFn: (row) => row.profile?.prodi,
         header: 'Prodi',
-        cell: ({ row }) => <span className="text-sm truncate max-w-[160px] inline-block">{row.original.prodi || '—'}</span>,
+        cell: ({ row }) => <span className="text-sm truncate max-w-[160px] inline-block">{row.original.profile?.prodi || '—'}</span>,
       },
       {
-        accessorKey: 'email',
-        header: 'Email',
-        cell: ({ row }) => row.original.email ? (
-          <a href={`mailto:${row.original.email}`} className="text-sm text-primary hover:underline inline-flex items-center gap-1 max-w-[180px] truncate">
-            <Mail className="h-3 w-3 shrink-0" />
-            <span className="truncate">{row.original.email}</span>
-          </a>
-        ) : <span className="text-sm text-muted-foreground">—</span>,
-      },
-      {
-        accessorKey: 'no_hp',
+        id: 'no_hp',
+        accessorFn: (row) => row.profile?.no_hp,
         header: 'No HP',
-        cell: ({ row }) => row.original.no_hp || row.original.kontak ? (
-          <a href={`https://wa.me/${(row.original.no_hp || row.original.kontak).replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+        cell: ({ row }) => row.original.profile?.no_hp ? (
+          <a
+            href={`https://wa.me/${row.original.profile.no_hp.replace(/\D/g, '')}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+          >
             <Phone className="h-3 w-3" />
-            {row.original.no_hp || row.original.kontak}
+            {row.original.profile.no_hp}
           </a>
         ) : <span className="text-sm text-muted-foreground">—</span>,
       },
       {
-        accessorKey: 'ktm_url',
+        id: 'ktm_url',
         header: 'KTM',
         cell: ({ row }) => row.original.ktm_url ? (
-          <Button variant="ghost" size="sm" onClick={() => handleKtmView(row.original)} className="h-7 text-xs text-emerald-700 hover:text-emerald-700">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleKtmView(row.original)}
+            className="h-7 text-xs text-emerald-700 hover:text-emerald-700"
+          >
             <FileText className="h-3.5 w-3.5 mr-1" /> Lihat
           </Button>
         ) : <span className="text-xs text-muted-foreground">—</span>,
@@ -179,7 +189,7 @@ export default function AnggotaTable({ timId, anggota = [], loading }) {
   )
 
   const table = useReactTable({
-    data: anggota,
+    data: rows,
     columns,
     state: { sorting, globalFilter },
     onSortingChange: setSorting,
@@ -200,7 +210,7 @@ export default function AnggotaTable({ timId, anggota = [], loading }) {
     )
   }
 
-  if (!anggota || anggota.length === 0) {
+  if (rows.length === 0) {
     return null // parent renders empty state
   }
 
@@ -245,7 +255,7 @@ export default function AnggotaTable({ timId, anggota = [], loading }) {
 
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">
-          {table.getFilteredRowModel().rows.length} dari {anggota.length} anggota
+          {table.getFilteredRowModel().rows.length} dari {rows.length} anggota
         </span>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>

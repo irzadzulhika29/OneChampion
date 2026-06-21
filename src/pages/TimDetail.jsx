@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import TimForm from '@/components/tim/TimForm'
 import AnggotaForm from '@/components/tim/AnggotaForm'
 import AnggotaTable from '@/components/tim/AnggotaTable'
-import { ArrowLeft, Plus, Trash2, Users, Crown, Mail, Phone, IdCard, GraduationCap } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Users, Crown, Phone, IdCard, GraduationCap } from 'lucide-react'
 import { PERAN_ANGGOTA } from '@/lib/utils'
 
 export default function TimDetailPage() {
@@ -111,7 +111,7 @@ export default function TimDetailPage() {
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-semibold truncate">{a.nama}</span>
+                          <span className="font-semibold truncate">{a.profile?.full_name || '—'}</span>
                           {a.peran === 'ketua' && <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
                         </div>
                         <Badge variant={a.peran === 'ketua' ? 'default' : 'secondary'} className="text-xs shrink-0">
@@ -119,28 +119,22 @@ export default function TimDetailPage() {
                         </Badge>
                       </div>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                        {a.nim && (
+                        {a.profile?.nim && (
                           <div className="flex items-center gap-1 truncate">
                             <IdCard className="h-3 w-3 shrink-0" />
-                            <span className="font-mono truncate">{a.nim}</span>
+                            <span className="font-mono truncate">{a.profile.nim}</span>
                           </div>
                         )}
-                        {a.prodi && (
+                        {a.profile?.prodi && (
                           <div className="flex items-center gap-1 truncate">
                             <GraduationCap className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{a.prodi}</span>
+                            <span className="truncate">{a.profile.prodi}</span>
                           </div>
                         )}
-                        {a.email && (
-                          <div className="flex items-center gap-1 truncate col-span-2">
-                            <Mail className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{a.email}</span>
-                          </div>
-                        )}
-                        {(a.no_hp || a.kontak) && (
+                        {a.profile?.no_hp && (
                           <div className="flex items-center gap-1 col-span-2">
                             <Phone className="h-3 w-3 shrink-0" />
-                            <span>{a.no_hp || a.kontak}</span>
+                            <span>{a.profile.no_hp}</span>
                           </div>
                         )}
                       </div>

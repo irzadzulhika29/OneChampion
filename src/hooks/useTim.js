@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 
 /**
  * List tim (teams) for current user.
+ * Embeds anggota_tim with profile (nama, email) for display.
  */
 export function useTim() {
   return useQuery({
@@ -19,7 +20,7 @@ export function useTim() {
 }
 
 /**
- * Single tim with anggota.
+ * Single tim with full anggota list (each linked to a profile).
  */
 export function useTimDetail(id) {
   return useQuery({
@@ -28,10 +29,25 @@ export function useTimDetail(id) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('tim')
-        .select('*, anggota_tim(*)')
+        .select(`
+          *,
+          anggota_tim(
+            id,
+            tim_id,
+            profile_id,
+            peran,
+            ktm_url,
+            created_at,
+            profile:profiles(id, full_name, avatar_url, nim, prodi, no_hp)
+          )
+        `)
         .eq('id', id)
         .single()
       if (error) throw error
+      // Normalize anggota_tim if it comes back as object instead of array
+      if (data?.anggota_tim && !Array.isArray(data.anggota_tim)) {
+        data.anggota_tim = [data.anggota_tim]
+      }
       return data
     },
   })
@@ -97,32 +113,13 @@ export function useDeleteTim() {
 }
 
 /**
- * Add anggota to a tim.
- * Accepts either a partial anggota object (with tim_id) OR
- *   { tim_id, anggota_id_to_link } to COPY an existing anggota row into this tim.
+ * Add anggota (profile) to a tim.
+ * Just inserts a row linking profile_id to tim_id with a role.
  */
 export function useAddAnggota() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (values) => {
-      // If "link existing" mode: read source row then insert a copy into the target tim.
-      if (values.anggota_id_to_link && !values.nama) {
-        const { data: src, error: srcErr } = await supabase
-          .from('anggota_tim')
-          .select('*')
-          .eq('id', values.anggota_id_to_link)
-          .single()
-        if (srcErr) throw srcErr
-        const { id, created_at, tim_id, ...copy } = src
-        const { data, error } = await supabase
-          .from('anggota_tim')
-          .insert({ ...copy, tim_id: values.tim_id })
-          .select()
-          .single()
-        if (error) throw error
-        return data
-      }
-      // Normal insert
       const { data, error } = await supabase
         .from('anggota_tim')
         .insert(values)
@@ -134,13 +131,12 @@ export function useAddAnggota() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['tim', data.tim_id] })
       qc.invalidateQueries({ queryKey: ['tim'] })
-      qc.invalidateQueries({ queryKey: ['all-anggota'] })
     },
   })
 }
 
 /**
- * Update anggota.
+ * Update anggota (peran, ktm_url).
  */
 export function useUpdateAnggota() {
   const qc = useQueryClient()
@@ -162,7 +158,7 @@ export function useUpdateAnggota() {
 }
 
 /**
- * Delete anggota.
+ * Delete anggota (remove from tim — does not delete the profile).
  */
 export function useDeleteAnggota() {
   const qc = useQueryClient()

@@ -16,14 +16,25 @@ export const timSchema = z.object({
   deskripsi: z.string().optional(),
 })
 
+/**
+ * anggota_tim is now a JOIN table linking profile_id <-> tim_id.
+ * Identity (nama/email) lives in profiles + auth.users.
+ * Form only needs profile_id (who) + peran (role) + ktm_url (optional).
+ */
 export const anggotaSchema = z.object({
-  nama: z.string().min(2, 'Nama anggota minimal 2 karakter'),
-  email: z.string().email('Email tidak valid').optional().or(z.literal('')),
-  nim: z.string().optional(),
-  prodi: z.string().optional(),
-  no_hp: z.string().optional(),
+  profile_id: z.string().uuid('Pilih anggota'),
   peran: z.enum(['ketua', 'anggota', 'cadangan']).default('anggota'),
-  ktm_url: z.string().optional(),
+  ktm_url: z.string().optional().or(z.literal('')),
+})
+
+/**
+ * Profile fields (academic info) updated by user themselves.
+ */
+export const profileSchema = z.object({
+  full_name: z.string().min(2, 'Nama minimal 2 karakter'),
+  nim: z.string().optional().or(z.literal('')),
+  prodi: z.string().optional().or(z.literal('')),
+  no_hp: z.string().optional().or(z.literal('')),
 })
 
 export const lombaSchema = z.object({
