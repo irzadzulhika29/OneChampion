@@ -15,7 +15,7 @@ export function useAllProfiles() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, nim, prodi, no_hp, created_at')
+        .select('id, full_name, avatar_url, nim, prodi, angkatan, no_hp, created_at')
         .order('full_name')
       if (error) throw error
       // Join with auth.users to get email — done client-side via /auth/admin would be unsafe;

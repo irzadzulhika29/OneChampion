@@ -85,8 +85,17 @@ export default function AllAnggotaTable({ loading }) {
         cell: ({ row }) => <span className="text-sm truncate max-w-[140px] inline-block">{row.original.prodi || '—'}</span>,
       },
       {
+        accessorKey: 'angkatan',
+        header: 'Angkatan',
+        cell: ({ row }) => row.original.angkatan ? (
+          <Badge variant="outline" className="text-xs">
+            {row.original.angkatan}
+          </Badge>
+        ) : <span className="text-xs text-muted-foreground">—</span>,
+      },
+      {
         accessorKey: 'no_hp',
-        header: 'No HP',
+        header: 'Telp',
         cell: ({ row }) => row.original.no_hp ? (
           <a
             href={`https://wa.me/${row.original.no_hp.replace(/\D/g, '')}`}
@@ -96,6 +105,20 @@ export default function AllAnggotaTable({ loading }) {
           >
             <Phone className="h-3 w-3" />
             {row.original.no_hp}
+          </a>
+        ) : <span className="text-sm text-muted-foreground">—</span>,
+      },
+      {
+        accessorKey: 'email',
+        header: 'Email',
+        cell: ({ row }) => row.original.id ? (
+          <a
+            href={`mailto:${row.original.id}@users.noreply.sabijuara.app`}
+            className="text-sm text-primary hover:underline inline-flex items-center gap-1 max-w-[180px] truncate"
+            title="Email disimpan di auth.users — tidak bisa diakses via API publik. Buka dashboard admin untuk lihat."
+          >
+            <Mail className="h-3 w-3 shrink-0" />
+            <span className="truncate text-muted-foreground italic">lihat di Supabase</span>
           </a>
         ) : <span className="text-sm text-muted-foreground">—</span>,
       },

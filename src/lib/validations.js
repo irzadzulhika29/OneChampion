@@ -34,6 +34,7 @@ export const profileSchema = z.object({
   full_name: z.string().min(2, 'Nama minimal 2 karakter'),
   nim: z.string().optional().or(z.literal('')),
   prodi: z.string().optional().or(z.literal('')),
+  angkatan: z.string().optional().or(z.literal('')),
   no_hp: z.string().optional().or(z.literal('')),
 })
 

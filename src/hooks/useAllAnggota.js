@@ -14,7 +14,7 @@ export function useAllAnggota() {
       // Get all profiles
       const { data: profiles, error: pErr } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, nim, prodi, no_hp, created_at')
+        .select('id, full_name, avatar_url, nim, prodi, angkatan, no_hp, created_at')
         .order('full_name')
       if (pErr) throw pErr
 

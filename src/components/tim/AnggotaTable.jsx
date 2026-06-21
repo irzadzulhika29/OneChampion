@@ -106,9 +106,17 @@ export default function AnggotaTable({ timId, anggota = [], loading }) {
         cell: ({ row }) => <span className="text-sm truncate max-w-[160px] inline-block">{row.original.profile?.prodi || '—'}</span>,
       },
       {
+        id: 'angkatan',
+        accessorFn: (row) => row.profile?.angkatan,
+        header: 'Angkatan',
+        cell: ({ row }) => row.original.profile?.angkatan ? (
+          <Badge variant="outline" className="text-xs">{row.original.profile.angkatan}</Badge>
+        ) : <span className="text-xs text-muted-foreground">—</span>,
+      },
+      {
         id: 'no_hp',
         accessorFn: (row) => row.profile?.no_hp,
-        header: 'No HP',
+        header: 'Telp',
         cell: ({ row }) => row.original.profile?.no_hp ? (
           <a
             href={`https://wa.me/${row.original.profile.no_hp.replace(/\D/g, '')}`}
